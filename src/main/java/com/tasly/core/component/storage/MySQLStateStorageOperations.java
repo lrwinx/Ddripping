@@ -28,15 +28,12 @@ public class MySQLStateStorageOperations implements StateStorageOperations{
     }
 
 
-    final String DDL="CREATE TABLE ddripping_idempotency\n" +
-            "(\n" +
-            "    id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,\n" +
-            "    the_key VARCHAR(255) NOT NULL,\n" +
-            "    out_time INT NOT NULL,\n" +
-            "    create_time DATETIME NOT NULL,\n" +
-            "    update_time DATETIME NOT NULL,\n" +
-            "    value LONGTEXT NOT NULL\n" +
-            ");\n";
+    final String DDL="create table if not exists ddripping_idempotency(id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,\n" +
+            "                the_key VARCHAR(255) NOT NULL,\n" +
+            "                out_time INT NOT NULL,\n" +
+            "                create_time DATETIME NOT NULL,\n" +
+            "                update_time DATETIME NOT NULL,\n" +
+            "                value LONGTEXT NOT NULL);";
 
     String SELECT_BY_KEY_SQL = "select * from ddripping_idempotency where the_key = ?";
     String DELETE_BY_KEY_SQL = "delete from ddripping_idempotency where the_key = ?";
