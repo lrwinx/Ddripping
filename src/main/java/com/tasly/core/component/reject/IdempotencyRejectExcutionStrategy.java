@@ -2,8 +2,7 @@ package com.tasly.core.component.reject;
 
 import com.tasly.core.component.storage.StateStorageOperations;
 import com.tasly.core.exception.DataAccessRejectException;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.tasly.core.exception.RejectNotSupportedException;
 
 /**
  * Created by dulei on 11/27/16.
@@ -15,45 +14,85 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public abstract class IdempotencyRejectExcutionStrategy {
 
+    public static IdempotencyRejectExcutionStrategy RESULT_SAME = new RESULT_SAME();
+    public static IdempotencyRejectExcutionStrategy RESUTL_NUL = new RESUTL_NUL();
+    public static IdempotencyRejectExcutionStrategy THROW_EXCEPTION = new THROW_EXCEPTION();
 
     /**
      * 返回相同结果
      */
-    public static class RESULT_SAME extends IdempotencyRejectExcutionStrategy{
+    private static class RESULT_SAME extends IdempotencyRejectExcutionStrategy{
         StateStorageOperations stateStorageOperations;
-        public RESULT_SAME(StateStorageOperations stateStorageOperations){
-            this.stateStorageOperations = stateStorageOperations;
-        }
         @Override
         public Object rejectActionIt(String key) {
             return stateStorageOperations.getKey(key);
+        }
+
+        @Override
+        public void setRejectException(RuntimeException rejectException) {
+            throw new RejectNotSupportedException("RESUTL_NUL 不支持设置异常策略!");
+        }
+
+        @Override
+        public void setStateStorageOperations(StateStorageOperations stateStorageOperations) {
+            this.stateStorageOperations = stateStorageOperations;
         }
     }
 
     /**
      * 返回null
      */
-    public static class RESUTL_NUL extends IdempotencyRejectExcutionStrategy{
+    private static class RESUTL_NUL extends IdempotencyRejectExcutionStrategy{
         @Override
         public Object rejectActionIt(String key) {
             return null;
+        }
+
+        @Override
+        public void setRejectException(RuntimeException rejectException) {
+            throw new RejectNotSupportedException("RESUTL_NUL 不支持设置异常策略!");
+        }
+
+        @Override
+        public void setStateStorageOperations(StateStorageOperations stateStorageOperations) {
+            throw new RejectNotSupportedException("RESUTL_NUL 不支持设置存储策略!");
         }
     }
 
     /**
      * 抛出异常  此异常设计为可以指定的业务异常
      */
-    public static class THROW_EXCEPTION extends IdempotencyRejectExcutionStrategy{
-        RuntimeException t = new DataAccessRejectException();
-        public THROW_EXCEPTION(RuntimeException t){
-            this.t = checkNotNull(t);
-        }
+    private static class THROW_EXCEPTION extends IdempotencyRejectExcutionStrategy{
+        RuntimeException rejectException = new DataAccessRejectException();
+
         @Override
         public Object rejectActionIt(String key) {
-            throw t;
+            throw rejectException;
+        }
+
+        @Override
+        public void setRejectException(RuntimeException rejectException) {
+            this.rejectException = rejectException;
+        }
+
+        @Override
+        public void setStateStorageOperations(StateStorageOperations stateStorageOperations) {
+            throw new RejectNotSupportedException("THROW_EXCEPTION 不支持设置存储策略!");
         }
     }
 
     public abstract Object rejectActionIt(String key);
+
+    /**
+     * 设置异常策略
+     * @param rejectException
+     */
+    public abstract void setRejectException(RuntimeException rejectException);
+
+    /**
+     * 设置存储策略
+     * @param stateStorageOperations
+     */
+    public abstract void setStateStorageOperations(StateStorageOperations stateStorageOperations);
 
 }

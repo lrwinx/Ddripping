@@ -17,7 +17,7 @@ public class DdrippingConfig {
 
     ArgsAnalysisTemplate argsAnalysisTemplate = new SpELArgsAnalysis();
     StateStorageTemplate stateStorageTemplate = new StateStorageTemplate();
-    IdempotencyRejectExcutionStrategy idempotencyRejectExcutionStrategy = new IdempotencyRejectExcutionStrategy.THROW_EXCEPTION(new RuntimeException("拒绝策略为异常"));
+    IdempotencyRejectExcutionStrategy idempotencyRejectExcutionStrategy;
 
     public ArgsAnalysisTemplate getArgsAnalysisTemplate() {
         return argsAnalysisTemplate;
