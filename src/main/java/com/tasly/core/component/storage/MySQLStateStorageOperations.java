@@ -1,11 +1,10 @@
 package com.tasly.core.component.storage;
 
+import com.tasly.core.exception.MySQLValueTimeOutException;
+
 import javax.sql.DataSource;
 import java.io.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Date;
 
 /**
@@ -147,6 +146,13 @@ public class MySQLStateStorageOperations implements StateStorageOperations{
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {//如果存在
                 byte[] bytes = resultSet.getBytes("value");
+                Timestamp update_time = resultSet.getTimestamp("update_time");
+                Long timeout = resultSet.getLong("out_time");
+                Long expireTime = update_time.getTime() + timeout;
+                if(new Date().getTime() - expireTime > 0 ){//过期了
+                    this.removeKey(key);//删除数据
+                    throw new MySQLValueTimeOutException();
+                }
                 return getObject(bytes);
             }
         }catch (SQLException e) {

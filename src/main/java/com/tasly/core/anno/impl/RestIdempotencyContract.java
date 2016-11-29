@@ -4,6 +4,7 @@ import com.tasly.core.anno.RestIdempotency;
 import com.tasly.core.component.analysis.ArgsAnalysisTemplate;
 import com.tasly.core.component.reject.IdempotencyRejectExcutionStrategy;
 import com.tasly.core.component.storage.StateStorageTemplate;
+import com.tasly.core.exception.NeedRefreshException;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -36,20 +37,28 @@ public class RestIdempotencyContract extends RestIdempotencyConfigAccessor imple
         String key = argsAnalysisTemplate.generatorKey(expressionData,argList);
 
         Object result = null;
-        if(stateStorageTemplate.setKeyIfAbsence(key,restIdempotency.time())){//设置成功
-            try {
-                result = pjp.proceed();
-                stateStorageTemplate.resetValue(key, result);
-            }catch (Throwable throwable) {
-                stateStorageTemplate.removeKey(key);
-                throwable.printStackTrace();
+        while (true){
+            if(stateStorageTemplate.setKeyIfAbsence(key,restIdempotency.time())){//设置成功
+                try {
+                    result = pjp.proceed();
+                    stateStorageTemplate.resetValue(key, result);
+                }catch (Throwable throwable) {
+                    stateStorageTemplate.removeKey(key);
+                    throwable.printStackTrace();
+                }
+                break;
+            }else{//设置不成功  按照策略进行返回
+                try {
+                    return idempotencyRejectExcutionStrategy.rejectActionIt(key);
+                }catch (NeedRefreshException e){//重新获取数据
+                    continue;
+                }
             }
-        }else{//设置不成功  按照策略进行返回
-            return idempotencyRejectExcutionStrategy.rejectActionIt(key);
         }
-
         return result;
     }
+
+
 
 
 
