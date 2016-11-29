@@ -1,10 +1,8 @@
 package com.tasly.core.component.storage;
 
-import com.google.common.collect.Maps;
-
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by dulei on 11/27/16.
@@ -16,7 +14,7 @@ import java.util.TimerTask;
  */
 public class MemoryStateStorageOperations implements StateStorageOperations{
 
-    Map<String,Object> map = Maps.newHashMap();//这个应该是共享数据的，这里是线程不安全的。、 需要注意
+    ConcurrentHashMap<String,Object> map = new ConcurrentHashMap<String,Object>();
 
     @Override
     public boolean setKeyIfAbsence(String key, long timeout) {
