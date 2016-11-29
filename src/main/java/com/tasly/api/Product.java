@@ -1,5 +1,6 @@
 package com.tasly.api;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
@@ -10,8 +11,9 @@ import java.math.BigDecimal;
  * Author:Lrwin
  * Description:
  */
-public class Product {
+public class Product implements Serializable {
 
+    private static final long serialVersionUID = -7152391739275091620L;
     private String sku;
     private String name;
     private String desc;

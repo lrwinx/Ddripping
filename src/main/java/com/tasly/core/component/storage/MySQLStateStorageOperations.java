@@ -1,6 +1,7 @@
 package com.tasly.core.component.storage;
 
 import javax.sql.DataSource;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,7 +34,7 @@ public class MySQLStateStorageOperations implements StateStorageOperations{
             "                out_time INT NOT NULL,\n" +
             "                create_time DATETIME NOT NULL,\n" +
             "                update_time DATETIME NOT NULL,\n" +
-            "                value LONGTEXT NOT NULL);";
+            "                value BLOB NOT NULL);";
 
     String SELECT_BY_KEY_SQL = "select * from ddripping_idempotency where the_key = ?";
     String DELETE_BY_KEY_SQL = "delete from ddripping_idempotency where the_key = ?";
@@ -67,35 +68,17 @@ public class MySQLStateStorageOperations implements StateStorageOperations{
             if (resultSet.next()) {//如果存在
                 return false;
             }
-
             if(timeout != STATE_STORAGE_TIMEOUT.NEVER_TIME_OUT){
-//                map.put(key,"仍在操作");
                 Date now = new Date();
                 PreparedStatement insertPreparedStatement = connection.prepareStatement(INSERT_SQL);
                 insertPreparedStatement.setString(new Integer(1),key);
                 insertPreparedStatement.setLong(new Integer(2), timeout);
-                insertPreparedStatement.setTimestamp(new Integer(3), new java.sql.Timestamp(new Date().getTime()));
-                insertPreparedStatement.setTimestamp(new Integer(4), new java.sql.Timestamp(new Date().getTime()));
-                insertPreparedStatement.setString(new Integer(5), "仍在操作");
+                insertPreparedStatement.setTimestamp(new Integer(3), new java.sql.Timestamp(now.getTime()));
+                insertPreparedStatement.setTimestamp(new Integer(4), new java.sql.Timestamp(now.getTime()));
+                insertPreparedStatement.setBytes(new Integer(5), converObject("仍在操作"));
                 insertPreparedStatement.executeUpdate();
 
-
                 //TODO 这个定时需要再考虑
-//                Timer timer= new Timer();
-//                final Connection finalConnection = connection;
-//                TimerTask task  = new TimerTask(){    //创建一个新的计时器任务。
-//                    @Override
-//                    public void run() {
-//                        try {
-//                            PreparedStatement delPreparedStatement = finalConnection.prepareStatement(DELETE_BY_KEY_SQL);
-//                            delPreparedStatement.setString(new Integer(1),key);
-//                            delPreparedStatement.execute();
-//                        } catch (SQLException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//                };
-//                timer.schedule(task, timeout);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -117,8 +100,7 @@ public class MySQLStateStorageOperations implements StateStorageOperations{
         try {
             connection = dataSource.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_BY_KEY_SQL);
-            //TODO value需要序列化
-            preparedStatement.setString(new Integer(1), value.toString());
+            preparedStatement.setBytes(new Integer(1), converObject(value));
             preparedStatement.setString(new Integer(2), key);
             preparedStatement.execute();
         }catch (Exception e){
@@ -164,7 +146,8 @@ public class MySQLStateStorageOperations implements StateStorageOperations{
             preparedStatement.setString(new Integer(1), key);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {//如果存在
-                return resultSet.getString("value");
+                byte[] bytes = resultSet.getBytes("value");
+                return getObject(bytes);
             }
         }catch (SQLException e) {
             e.printStackTrace();
@@ -180,5 +163,47 @@ public class MySQLStateStorageOperations implements StateStorageOperations{
         return null;
     }
 
+
+    private byte[] converObject(Object obj){
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream out = null;
+        try {
+            out = new ObjectOutputStream(baos);
+            out.writeObject(obj);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally{
+            try {
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return baos.toByteArray();
+    }
+
+    private Object getObject(byte[] bytes){
+        ByteArrayInputStream bais;
+        ObjectInputStream in = null;
+        try{
+            bais = new ByteArrayInputStream(bytes);
+            in = new ObjectInputStream(bais);
+
+            return in.readObject();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally{
+            if(in != null){
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
+    }
 
 }

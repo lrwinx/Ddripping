@@ -5,9 +5,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -20,17 +20,19 @@ import java.util.UUID;
  */
 @Controller
 @RequestMapping("/api/order")
-public class OrderApi {
+public class OrderApi implements Serializable{
+
+    private static final long serialVersionUID = -453412739627691693L;
 
     @RequestMapping(value = "{uid}",method = RequestMethod.POST)
     @ResponseBody
     @RestIdempotency(value = "1#size(),2",time = 5000)
-    public Map<String,?> generaterOrder(HttpServletRequest request,
+    public HashMap<String,?> generaterOrder(HttpServletRequest request,
                                         @RequestBody List<Product> productList,
                                         @PathVariable("uid") Integer uid){
         System.out.println("用户id: " + uid);
         System.out.println("购买产品: " + productList);
-        Map result = new HashMap(){
+        HashMap result = new HashMap(){
             {
                 put("orderId",UUID.randomUUID().toString());
             }
