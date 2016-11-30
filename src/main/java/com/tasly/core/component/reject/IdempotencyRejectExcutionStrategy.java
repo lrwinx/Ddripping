@@ -1,7 +1,6 @@
 package com.tasly.core.component.reject;
 
 import com.tasly.core.component.storage.StateStorageOperations;
-import com.tasly.core.exception.DataAccessRejectException;
 import com.tasly.core.exception.RejectNotSupportedException;
 
 /**
@@ -14,9 +13,14 @@ import com.tasly.core.exception.RejectNotSupportedException;
  */
 public abstract class IdempotencyRejectExcutionStrategy {
 
+
+
     public static IdempotencyRejectExcutionStrategy RESULT_SAME = new RESULT_SAME();
     public static IdempotencyRejectExcutionStrategy RESUTL_NUL = new RESUTL_NUL();
     public static IdempotencyRejectExcutionStrategy THROW_EXCEPTION = new THROW_EXCEPTION();
+
+    public static IdempotencyRejectExcutionStrategy DEFAULT_REJECT_EXCUTION_STRATEGY = RESULT_SAME;//默认拒绝策略
+
 
     /**
      * 返回相同结果
@@ -36,6 +40,11 @@ public abstract class IdempotencyRejectExcutionStrategy {
         @Override
         public void setStateStorageOperations(StateStorageOperations stateStorageOperations) {
             this.stateStorageOperations = stateStorageOperations;
+        }
+
+        @Override
+        public String toString() {
+            return "RESULT_SAME";
         }
     }
 
@@ -57,13 +66,17 @@ public abstract class IdempotencyRejectExcutionStrategy {
         public void setStateStorageOperations(StateStorageOperations stateStorageOperations) {
             throw new RejectNotSupportedException("RESUTL_NUL 不支持设置存储策略!");
         }
+        @Override
+        public String toString() {
+            return "RESUTL_NUL";
+        }
     }
 
     /**
      * 抛出异常  此异常设计为可以指定的业务异常
      */
     private static class THROW_EXCEPTION extends IdempotencyRejectExcutionStrategy{
-        RuntimeException rejectException = new DataAccessRejectException();
+        RuntimeException rejectException ;
 
         @Override
         public Object rejectActionIt(String key) {
@@ -78,6 +91,10 @@ public abstract class IdempotencyRejectExcutionStrategy {
         @Override
         public void setStateStorageOperations(StateStorageOperations stateStorageOperations) {
             throw new RejectNotSupportedException("THROW_EXCEPTION 不支持设置存储策略!");
+        }
+        @Override
+        public String toString() {
+            return "THROW_EXCEPTION";
         }
     }
 

@@ -16,12 +16,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Aspect
-//@Component
 public class RestIdempotencyContract extends RestIdempotencyConfigAccessor implements InitializingBean{
+
+
     ArgsAnalysisTemplate argsAnalysisTemplate;
     StateStorageTemplate stateStorageTemplate;
     IdempotencyRejectExcutionStrategy idempotencyRejectExcutionStrategy;
-
 
     @Override
     public void afterPropertiesSet() throws Exception {
